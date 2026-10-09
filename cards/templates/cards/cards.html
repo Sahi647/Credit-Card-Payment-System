@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cards | Credit Card</title>
+    <link rel="stylesheet" href="{% static 'cards/style.css' %}">
+</head>
+<body>
+
+<div class="page">
+
+    <nav class="navbar">
+        <div class="logo">CARD<span>FLOW</span></div>
+
+        <div class="nav-links">
+            <a href="{% url 'auth_profile_page' %}">Dashboard</a>
+            <a href="{% url 'cards_page' %}" class="active">My Cards</a>
+            <a href="{% url 'transaction_history' %}">Transactions</a>
+            <a href="{% url 'auth_logout_page' %}" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <div class="header-row">
+            <div>
+                <p class="eyebrow">WALLET</p>
+                <h1>My Cards</h1>
+                <p class="subtitle">Manage your saved credit and debit cards.</p>
+            </div>
+
+            <a href="{% url 'add_card_page' %}" class="add-button">
+                + Add Card
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if cards %}
+
+            <div class="cards-grid">
+
+                {% for card in cards %}
+
+                <div class="card-wrapper">
+                    <div class="saved-card-pair" aria-label="{{ card.card_type }} card ending in {{ card.last_four }}">
+                        <section class="saved-card-side" aria-label="Front of card">
+                            <p class="saved-card-side-label">FRONT</p>
+                            <div class="saved-card-face saved-card-front{% if card.card_type == 'Debit' %} saved-card-debit{% elif card.card_type == 'Premium' %} saved-card-premium{% endif %}">
+                                <div class="saved-card-top">
+                                    <span>{{ card.card_type }}</span>
+                                    <span class="saved-card-brand">CARD<span>FLOW</span></span>
+                                </div>
+
+                                <span class="saved-card-chip" aria-hidden="true"><span></span></span>
+
+                                <div class="saved-card-number">{{ card.masked_number }}</div>
+
+                                <div class="saved-card-bottom">
+                                    <div>
+                                        <small>CARDHOLDER</small>
+                                        <strong>{{ card.card_holder }}</strong>
+                                    </div>
+                                    <div>
+                                        <small>EXPIRES</small>
+                                        <strong>{{ card.expiry }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="saved-card-side" aria-label="Back of card">
+                            <p class="saved-card-side-label">BACK</p>
+                            <div class="saved-card-face saved-card-back">
+                                <div class="saved-card-back-top">
+                                    <span>{{ card.card_type }} card</span>
+                                    <span>CardFlow</span>
+                                </div>
+                                <div class="saved-card-magnetic-stripe" aria-hidden="true"></div>
+                                <div class="saved-card-signature-row">
+                                    <div class="saved-card-signature">
+                                        <small>AUTHORIZED SIGNATURE</small>
+                                        <strong>{{ card.card_holder }}</strong>
+                                    </div>
+                                    <div class="saved-card-cvv">
+                                        <small>CVV</small>
+                                        <strong aria-label="CVV not stored">•••</strong>
+                                    </div>
+                                </div>
+                                <p class="saved-card-back-note">CVV is not stored for your security.</p>
+                                <div class="saved-card-back-bottom">
+                                    <span>•••• {{ card.last_four }}</span>
+                                    <span>CardFlow</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="saved-card-actions">
+                        <span>•••• {{ card.last_four }}</span>
+                        <button
+                            type="button"
+                            class="delete-icon-button"
+                            data-delete-dialog="delete-dialog-{{ card.id }}"
+                            aria-label="Delete card ending in {{ card.last_four }}"
+                            title="Delete card"
+                        >
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M4 7h16M10 11v6m4-6v6M5.5 7l1 13h11l1-13M9 7V4h6v3"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <dialog class="delete-dialog" id="delete-dialog-{{ card.id }}" aria-labelledby="delete-title-{{ card.id }}">
+                        <form method="POST" action="{% url 'delete_card_page' card.id %}" class="delete-dialog-form">
+                            {% csrf_token %}
+                            <div class="delete-dialog-heading">
+                                <span class="delete-dialog-icon" aria-hidden="true">!</span>
+                                <button type="button" class="delete-dialog-close" data-close-dialog aria-label="Close dialog">×</button>
+                            </div>
+                            <h2 id="delete-title-{{ card.id }}">Delete this card?</h2>
+                            <p class="delete-dialog-copy">Enter your account password to remove the card ending in <strong>{{ card.last_four }}</strong>.</p>
+
+                            <label class="delete-dialog-label" for="delete-password-{{ card.id }}">Account password</label>
+                            <input
+                                type="password"
+                                id="delete-password-{{ card.id }}"
+                                name="password"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <div class="delete-dialog-actions">
+                                <button type="button" class="delete-cancel-button" data-close-dialog>Cancel</button>
+                                <button type="submit" class="delete-confirm-button">Delete card</button>
+                            </div>
+                        </form>
+                    </dialog>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+                <div class="empty-icon">💳</div>
+                <h2>No cards saved</h2>
+                <p>Add your first card to start making payments.</p>
+
+                <a href="{% url 'add_card_page' %}" class="add-button">
+                    + Add Your First Card
+                </a>
+            </div>
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+<script src="{% static 'cards/script.js' %}"></script>
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+```html
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+{% block title %}Daily Payment Summary{% endblock %}
+{% block content %}
+<div id="content-main">
+    <h1>Daily Payment Summary</h1>
+    <p>Report date: <strong>{{ today|date:"F j, Y" }}</strong></p>
+    <p><a class="button" href="{% url 'admin_transactions_export' %}">Export All Transactions to CSV</a></p>
+    <div class="module">
+        <table>
+            <thead><tr><th>Metric</th><th>Today's Total</th></tr></thead>
+            <tbody>
+                <tr><td>Total Transactions</td><td>{{ summary.total_transactions|intcomma }}</td></tr>
+                <tr><td>Successful Payments</td><td>{{ summary.successful_payments|intcomma }}</td></tr>
+                <tr><td>Failed Payments</td><td>{{ summary.failed_payments|intcomma }}</td></tr>
+                <tr><td>Pending Payments</td><td>{{ summary.pending_payments|intcomma }}</td></tr>
+                <tr><td>Total Successful Payment Amount</td><td>{{ summary.total_amount|floatformat:2|intcomma }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <h2>Recent Transactions Today</h2>
+    <div class="module">
+        <table>
+            <thead><tr><th>Transaction ID</th><th>Payment ID</th><th>Card</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.transaction_id }}</td>
+                    <td>{{ transaction.payment_id }}</td>
+                    <td>****{{ transaction.card_last_four }}</td>
+                    <td>{{ transaction.amount|floatformat:2 }}</td>
+                    <td>{{ transaction.status }}</td>
+                    <td>{{ transaction.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">No transactions recorded today.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p><a href="{% url 'admin:index' %}">Back to Admin Home</a></p>
+</div>
+{% endblock %}
+```

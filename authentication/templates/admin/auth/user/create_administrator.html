@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block title %}Create administrator | {{ site_title }}{% endblock %}
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'transactions/admin_dashboard.css' %}">
+{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:auth_user_changelist' %}">Users</a>
+    &rsaquo; Create administrator
+</div>
+{% endblock %}
+{% block content %}
+<section class="users-welcome">
+    <div>
+        <p class="admin-eyebrow">ACCOUNT DIRECTORY</p>
+        <h1>Create an administrator</h1>
+        <p>This account will be able to access CardFlow administration. Its password is securely hashed.</p>
+    </div>
+</section>
+<div class="administrator-form-panel">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="errornote">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+            <div class="administrator-form-field{% if field.errors %} administrator-form-field--error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+                {% for error in field.errors %}<p class="administrator-form-error">{{ error }}</p>{% endfor %}
+            </div>
+        {% endfor %}
+        <div class="administrator-form-actions">
+            <button class="button default" type="submit">Create administrator</button>
+            <a class="button cancel-link" href="{% url 'admin:auth_user_changelist' %}">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

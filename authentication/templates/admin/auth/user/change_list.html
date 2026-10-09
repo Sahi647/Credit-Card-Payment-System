@@ -1,0 +1,24 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'transactions/admin_dashboard.css' %}">
+{% endblock %}
+{% block content %}
+    <section class="users-welcome" aria-labelledby="users-title">
+        <div>
+            <p class="admin-eyebrow">ACCOUNT DIRECTORY</p>
+            <h1 id="users-title">Users &amp; access</h1>
+            <p>Find accounts, review assigned roles, and manage who can access CardFlow.</p>
+        </div>
+        <div class="users-count">
+            <span class="users-count__number">{{ cl.result_count }}</span>
+            <span class="users-count__label">account{{ cl.result_count|pluralize }} shown</span>
+        </div>
+    </section>
+    {{ block.super }}
+{% endblock %}
+{% block object-tools-items %}
+    <li><a href="{% url 'admin_create_administrator' %}" class="addlink">Create administrator</a></li>
+    {{ block.super }}
+{% endblock %}

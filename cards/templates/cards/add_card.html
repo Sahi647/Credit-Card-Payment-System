@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add a Card | CardFlow</title>
+    <link rel="stylesheet" href="{% static 'authentication/style.css' %}">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <nav class="dashboard-navbar" aria-label="Main navigation">
+            <a class="dashboard-logo" href="{% url 'auth_profile_page' %}">
+                CARD<span>FLOW</span>
+            </a>
+
+            <div class="dashboard-nav-links">
+                <a href="{% url 'auth_profile_page' %}">Dashboard</a>
+                <a href="{% url 'cards_page' %}" class="active">My Cards</a>
+                <a href="{% url 'transaction_history' %}">Transactions</a>
+                <a href="{% url 'auth_logout_page' %}" class="dashboard-logout">Logout</a>
+            </div>
+        </nav>
+
+        <main class="dashboard-container create-card-container">
+            <div class="create-card-heading">
+                <div>
+                    <p class="dashboard-eyebrow">SECURE WALLET</p>
+                    <h1>Add a card</h1>
+                    <p class="dashboard-intro">Enter your card details to add it to your wallet.</p>
+                </div>
+                <a href="{% url 'cards_page' %}" class="create-card-back">← Back to My Cards</a>
+            </div>
+
+            {% if messages %}
+                <div class="create-card-messages" role="status">
+                    {% for message in messages %}
+                        <div class="message">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="create-card-layout">
+                <section class="create-card-panel" aria-labelledby="card-form-heading">
+                    <div class="create-card-panel-heading">
+                        <span class="create-card-panel-icon" aria-hidden="true">▣</span>
+                        <div>
+                            <h2 id="card-form-heading">Card details</h2>
+                            <p>All fields are required.</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" class="create-card-form">
+                        {% csrf_token %}
+
+                        <div class="create-card-field">
+                            <label for="cardType">Card type</label>
+                            <select name="card_type" id="cardType">
+                                <option value="Credit">Credit card</option>
+                                <option value="Debit">Debit card</option>
+                                <option value="Premium">Premium card</option>
+                            </select>
+                        </div>
+
+                        <div class="create-card-field">
+                            <label for="cardHolder">Cardholder name</label>
+                            <input
+                                type="text"
+                                name="card_holder"
+                                id="cardHolder"
+                                placeholder="Name as shown on card"
+                                autocomplete="cc-name"
+                                maxlength="100"
+                                required
+                            >
+                        </div>
+
+                        <div class="create-card-field">
+                            <label for="cardNumber">Card number</label>
+                            <input
+                                type="text"
+                                name="card_number"
+                                id="cardNumber"
+                                placeholder="1234 5678 9012 3456"
+                                inputmode="numeric"
+                                autocomplete="cc-number"
+                                maxlength="19"
+                                required
+                            >
+                            <small>Use a 16-digit card number.</small>
+                        </div>
+
+                        <div class="create-card-field">
+                            <label for="expiry">Expiry date</label>
+                            <input
+                                type="text"
+                                name="expiry"
+                                id="expiry"
+                                placeholder="MM/YY"
+                                inputmode="numeric"
+                                autocomplete="cc-exp"
+                                maxlength="5"
+                                required
+                            >
+                        </div>
+
+                        <div class="create-card-field">
+                            <label for="cvv">CVV / security code</label>
+                            <input
+                                type="password"
+                                name="cvv"
+                                id="cvv"
+                                placeholder="3 or 4 digits"
+                                inputmode="numeric"
+                                autocomplete="cc-csc"
+                                minlength="3"
+                                maxlength="4"
+                                pattern="[0-9]{3,4}"
+                                aria-describedby="cvv-help"
+                                required
+                            >
+                            <small id="cvv-help">Format is checked, but this security code is never saved.</small>
+                        </div>
+
+                        <button type="submit" class="create-card-submit submit-btn">
+                            Save card <span aria-hidden="true">→</span>
+                        </button>
+                    </form>
+                </section>
+
+                <aside class="create-card-preview-panel" aria-label="Card preview and security information">
+                    <div class="create-card-preview-intro">
+                        <p class="dashboard-eyebrow">PREVIEW</p>
+                        <h2>Your card</h2>
+                        <p>This is a preview of how your card details will appear.</p>
+                    </div>
+
+                    <div class="create-card-visual" id="creditCard">
+                        <div class="create-card-visual-glow"></div>
+                        <div class="create-card-visual-top">
+                            <span id="previewType">Credit</span>
+                            <span class="create-card-brand">CARD<span>FLOW</span></span>
+                        </div>
+                        <span class="create-card-chip" aria-hidden="true"><span></span></span>
+                        <div class="create-card-preview-number" id="previewNumber">•••• •••• •••• ••••</div>
+                        <div class="create-card-visual-bottom">
+                            <div>
+                                <small>CARDHOLDER</small>
+                                <strong id="previewHolder">YOUR NAME</strong>
+                            </div>
+                            <div>
+                                <small>EXPIRES</small>
+                                <strong id="previewExpiry">MM/YY</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="create-card-security">
+                        <span class="create-card-security-icon" aria-hidden="true">⌑</span>
+                        <div>
+                            <strong>Your full card number is not stored</strong>
+                            <p>Only the last four digits are saved so you can identify your card.</p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'cards/script.js' %}"></script>
+</body>
+</html>

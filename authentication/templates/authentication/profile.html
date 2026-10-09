@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | CardFlow</title>
+    <link rel="stylesheet" href="{% static 'authentication/style.css' %}">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <nav class="dashboard-navbar" aria-label="Main navigation">
+            <a class="dashboard-logo" href="{% url 'auth_profile_page' %}">
+                CARD<span>FLOW</span>
+            </a>
+
+            <div class="dashboard-nav-links">
+                <a href="{% url 'auth_profile_page' %}" class="active">Dashboard</a>
+                <a href="{% url 'cards_page' %}">My Cards</a>
+                <a href="{% url 'transaction_history' %}">Transactions</a>
+                <a href="{% url 'auth_logout_page' %}" class="dashboard-logout">Logout</a>
+            </div>
+        </nav>
+
+        <main class="dashboard-container">
+            {% if messages %}
+                <div class="dashboard-messages" role="status">
+                    {% for message in messages %}
+                        <div class="message">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <section class="dashboard-welcome">
+                <div>
+                    <p class="dashboard-eyebrow">YOUR CARD FLOW</p>
+                    <h1>Welcome back, {{ user.username }}</h1>
+                    <p class="dashboard-intro">Your cards and account activity, all in one place.</p>
+                </div>
+                <a class="dashboard-primary-button" href="{% url 'add_card_page' %}">
+                    <span aria-hidden="true">+</span> Add a card
+                </a>
+            </section>
+
+            <section class="dashboard-stats" aria-label="Account overview">
+                <article class="dashboard-stat">
+                    <span class="dashboard-stat-icon" aria-hidden="true">▣</span>
+                    <div>
+                        <p>Saved cards</p>
+                        <strong>{{ user.cards.count }}</strong>
+                    </div>
+                    <a href="{% url 'cards_page' %}" aria-label="View saved cards">→</a>
+                </article>
+
+                <article class="dashboard-stat">
+                    <span class="dashboard-stat-icon dashboard-stat-icon-green" aria-hidden="true">✓</span>
+                    <div>
+                        <p>Account security</p>
+                        <strong>Protected</strong>
+                    </div>
+                </article>
+
+                <article class="dashboard-stat">
+                    <span class="dashboard-stat-icon dashboard-stat-icon-blue" aria-hidden="true">↗</span>
+                    <div>
+                        <p>Transactions</p>
+                        <strong>Activity</strong>
+                    </div>
+                    <a href="{% url 'transaction_history' %}" aria-label="View transactions">→</a>
+                </article>
+            </section>
+
+            <section class="dashboard-section">
+                <div class="dashboard-section-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">GET THINGS DONE</p>
+                        <h2>Quick actions</h2>
+                    </div>
+                    <p>Choose where you’d like to go next.</p>
+                </div>
+
+                <div class="dashboard-actions">
+                    <a href="{% url 'cards_page' %}" class="dashboard-action">
+                        <span class="dashboard-action-icon" aria-hidden="true">▣</span>
+                        <span class="dashboard-action-copy">
+                            <strong>My cards</strong>
+                            <span>View and manage your saved cards</span>
+                        </span>
+                        <span class="dashboard-action-arrow" aria-hidden="true">→</span>
+                    </a>
+
+                    <a href="{% url 'add_card_page' %}" class="dashboard-action">
+                        <span class="dashboard-action-icon dashboard-action-icon-purple" aria-hidden="true">+</span>
+                        <span class="dashboard-action-copy">
+                            <strong>Add a card</strong>
+                            <span>Save a credit or debit card</span>
+                        </span>
+                        <span class="dashboard-action-arrow" aria-hidden="true">→</span>
+                    </a>
+
+                    <a href="{% url 'transaction_history' %}" class="dashboard-action">
+                        <span class="dashboard-action-icon dashboard-action-icon-blue" aria-hidden="true">↗</span>
+                        <span class="dashboard-action-copy">
+                            <strong>Transactions</strong>
+                            <span>Review your payment activity</span>
+                        </span>
+                        <span class="dashboard-action-arrow" aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </section>
+
+            <aside class="dashboard-security">
+                <span class="dashboard-security-icon" aria-hidden="true">⌑</span>
+                <div>
+                    <strong>Your account is protected</strong>
+                    <p>Card numbers are stored in masked form, helping keep your payment details private.</p>
+                </div>
+                <span class="dashboard-security-badge">SECURE ACCOUNT</span>
+            </aside>
+        </main>
+    </div>
+</body>
+</html>

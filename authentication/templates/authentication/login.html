@@ -1,0 +1,83 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | CardFlow</title>
+    <link rel="stylesheet" href="{% static 'authentication/style.css' %}">
+</head>
+<body>
+
+<div class="background">
+    <div class="orb orb-one"></div>
+    <div class="orb orb-two"></div>
+    <div class="orb orb-three"></div>
+</div>
+
+<nav class="navbar">
+    <a href="{% url 'auth_login_page' %}" class="logo">Card<span>Flow</span></a>
+    <a href="{% url 'auth_register_page' %}" class="nav-button">Create Account</a>
+</nav>
+
+<main class="auth-page">
+
+```
+<div class="auth-card login-card">
+
+    <div class="brand-icon">🔐</div>
+
+    <h1>Welcome back</h1>
+    <p class="subtitle">Login to access your CardFlow dashboard.</p>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="Enter your username" required>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <div class="password-box">
+                <input type="password" name="password" id="loginPassword" placeholder="Enter your password" required>
+                <button type="button" class="toggle" data-target="loginPassword">👁</button>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Login <span>→</span></button>
+    </form>
+
+    <div class="security-note">
+        <span>🛡️</span>
+        <div>
+            <strong>Secure authentication</strong>
+            <small>Your password is protected using Django's secure password hashing.</small>
+        </div>
+    </div>
+
+    <div class="bottom-text">
+        Don't have an account?
+        <a href="{% url 'auth_register_page' %}">Create one</a>
+    </div>
+
+</div>
+```
+
+</main>
+
+<script src="{% static 'authentication/script.js' %}"></script>
+
+</body>
+</html>

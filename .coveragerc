@@ -1,0 +1,19 @@
+[run]
+branch = True
+source =
+    authentication
+    cards
+    transactions
+    payment_api
+omit =
+    */migrations/*
+    */tests.py
+    */apps.py
+    */__init__.py
+    */asgi.py
+    */wsgi.py
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 50
