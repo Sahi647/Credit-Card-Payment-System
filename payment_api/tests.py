@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from .database import Base
 from .models import Payment, Transaction
 from .schemas import PaymentCreate
-from .services import create_payment, get_payment
+from .services import create_payment, finalize_payment, get_payment
 
 
 class PaymentServiceTests(TestCase):
@@ -46,6 +46,7 @@ class PaymentServiceTests(TestCase):
         card_id=17,
         card_last_four="4242",
         amount=Decimal("35.50"),
+        simulate_failure=False,
     ):
         return create_payment(
             self.db,
@@ -53,10 +54,25 @@ class PaymentServiceTests(TestCase):
             card_id,
             card_last_four,
             amount,
+            simulate_failure,
         )
 
-    def test_valid_card_creates_successful_payment_and_transaction(self):
-        payment = self._create_payment()
+    def test_valid_card_transitions_pending_payment_and_transaction_to_success(self):
+        original_finalize = finalize_payment
+
+        def verify_pending_then_finalize(db, payment, simulate_failure=False):
+            self.assertEqual(payment.status, "PENDING")
+            transaction = db.query(Transaction).filter_by(
+                payment_id=payment.payment_id
+            ).one()
+            self.assertEqual(transaction.status, "PENDING")
+            return original_finalize(db, payment, simulate_failure)
+
+        with patch(
+            "payment_api.services.finalize_payment",
+            side_effect=verify_pending_then_finalize,
+        ):
+            payment = self._create_payment()
 
         self.assertEqual(payment.status, "SUCCESS")
         self.assertTrue(payment.payment_id.startswith("SIM-PAY-"))
@@ -70,6 +86,30 @@ class PaymentServiceTests(TestCase):
         self.assertEqual(transaction.status, "SUCCESS")
         self.assertEqual(transaction.amount, Decimal("35.50"))
         self.assertEqual(transaction.card_last_four, "4242")
+
+    def test_declined_simulation_transitions_pending_records_to_failed(self):
+        original_finalize = finalize_payment
+
+        def verify_pending_then_finalize(db, payment, simulate_failure=False):
+            self.assertEqual(simulate_failure, True)
+            self.assertEqual(payment.status, "PENDING")
+            transaction = db.query(Transaction).filter_by(
+                payment_id=payment.payment_id
+            ).one()
+            self.assertEqual(transaction.status, "PENDING")
+            return original_finalize(db, payment, simulate_failure)
+
+        with patch(
+            "payment_api.services.finalize_payment",
+            side_effect=verify_pending_then_finalize,
+        ):
+            payment = self._create_payment(simulate_failure=True)
+
+        self.assertEqual(payment.status, "FAILED")
+        transaction = self.db.query(Transaction).filter_by(
+            payment_id=payment.payment_id
+        ).one()
+        self.assertEqual(transaction.status, "FAILED")
 
     def test_unknown_or_other_users_card_is_rejected(self):
         self.get_card_mock.return_value = None
@@ -131,7 +171,23 @@ class PaymentServiceTests(TestCase):
         self.assertEqual(response["amount"], Decimal("35.50"))
         self.assertIn("No real money was charged", response["message"])
 
-    def test_swagger_payment_schema_contains_only_requested_payment_fields(self):
+    def test_payment_api_returns_declined_simulation_result(self):
+        from .routers import make_payment
+
+        response = make_payment(
+            PaymentCreate(
+                card_id=17,
+                card_last_four="4242",
+                amount="35.50",
+                simulate_failure=True,
+            ),
+            user_id=4,
+            db=self.db,
+        )
+        self.assertEqual(response["status"], "FAILED")
+        self.assertIn("Simulation declined", response["message"])
+
+    def test_swagger_payment_schema_documents_simulation_outcome(self):
         from .main import app
 
         operation = app.openapi()["paths"]["/api/payments/"]["post"]
@@ -142,8 +198,9 @@ class PaymentServiceTests(TestCase):
         schema = app.openapi()["components"]["schemas"][schema_name]
         self.assertEqual(
             set(schema["properties"]),
-            {"card_id", "card_last_four", "amount"},
+            {"card_id", "card_last_four", "amount", "simulate_failure"},
         )
+        self.assertNotIn("simulate_failure", schema["required"])
 
 
 class PaymentApiAuthorizationTests(TestCase):

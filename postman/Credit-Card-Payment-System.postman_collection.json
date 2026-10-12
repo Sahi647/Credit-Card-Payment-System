@@ -1,0 +1,764 @@
+{
+  "info": {
+    "_postman_id": "a5c2ff6d-bf52-4d21-8fca-7aa79b21c246",
+    "name": "Credit Card Payment System",
+    "description": "End-to-end local test flow for Django JWT, card management, FastAPI payment outcomes, transaction history, and owner checks. Use non-production test credentials and card data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "django_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "payment_url",
+      "value": "http://127.0.0.1:8001"
+    },
+    {
+      "key": "username",
+      "value": "customer-test-user"
+    },
+    {
+      "key": "password",
+      "value": "replace-with-test-password"
+    },
+    {
+      "key": "admin_username",
+      "value": "replace-with-administrator-username"
+    },
+    {
+      "key": "admin_password",
+      "value": "replace-with-administrator-password"
+    },
+    {
+      "key": "admin_csrf_token",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "card_id",
+      "value": ""
+    },
+    {
+      "key": "card_last_four",
+      "value": "4242"
+    },
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "failed_payment_id",
+      "value": ""
+    },
+    {
+      "key": "other_user_id",
+      "value": "999999"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Django login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{django_url}}/api/auth/login/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login returns JWT pair', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.access).to.be.a('string').and.not.empty;",
+              "    pm.collectionVariables.set('access_token', body.access);",
+              "    pm.collectionVariables.set('refresh_token', body.refresh);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authenticated profile",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{django_url}}/api/auth/profile/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('JWT grants access to the current profile', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh access token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{django_url}}/api/auth/refresh/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Refresh token returns a new access token', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.access).to.be.a('string').and.not.empty;",
+              "    pm.collectionVariables.set('access_token', body.access);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Add test card",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_type\": \"Credit\",\n  \"card_holder\": \"Postman Test User\",\n  \"card_number\": \"4111111111114242\",\n  \"expiry\": \"12/30\",\n  \"cvv\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{django_url}}/api/cards/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Card is saved without full number or CVV', function () {",
+              "    pm.response.to.have.status(201);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.masked_number).to.include('4242');",
+              "    pm.expect(body).not.to.have.property('card_number');",
+              "    pm.expect(body).not.to.have.property('cvv');",
+              "    pm.collectionVariables.set('card_id', String(body.id));",
+              "    pm.collectionVariables.set('card_last_four', body.last_four);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. List own cards in FastAPI",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{payment_url}}/api/payments/cards/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Only the authenticated user cards are listed', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const cards = pm.response.json();",
+              "    pm.expect(cards.some(card => String(card.id) === pm.collectionVariables.get('card_id'))).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List own cards in Django",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{django_url}}/api/cards/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Django card list is owner scoped and masked', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const cards = pm.response.json();",
+              "    pm.expect(cards).to.be.an('array');",
+              "    cards.forEach(card => {",
+              "        pm.expect(card).not.to.have.property('card_number');",
+              "        pm.expect(card).not.to.have.property('cvv');",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Successful payment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_id\": {{card_id}},\n  \"card_last_four\": \"{{card_last_four}}\",\n  \"amount\": \"35.50\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{payment_url}}/api/payments/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Payment completes successfully', function () {",
+              "    pm.response.to.have.status(201);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.status).to.eql('SUCCESS');",
+              "    pm.expect(body.message).to.include('No real money was charged');",
+              "    pm.collectionVariables.set('payment_id', body.payment_id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Deterministic declined payment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"card_id\": {{card_id}},\n  \"card_last_four\": \"{{card_last_four}}\",\n  \"amount\": \"12.00\",\n  \"simulate_failure\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{payment_url}}/api/payments/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Declined simulation is recorded as FAILED', function () {",
+              "    pm.response.to.have.status(201);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.status).to.eql('FAILED');",
+              "    pm.expect(body.message).to.include('Simulation declined');",
+              "    pm.collectionVariables.set('failed_payment_id', body.payment_id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Get successful payment",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{payment_url}}/api/payments/{{payment_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Payment status can be retrieved by its owner', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().status).to.eql('SUCCESS');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get declined payment status",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{payment_url}}/api/payments/{{failed_payment_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Failed payment status is persisted', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Filter own transactions",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{django_url}}/api/transactions/?status=FAILED&min_amount=1.00"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Transaction filters return only matching records', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const rows = pm.response.json();",
+              "    pm.expect(rows).to.be.an('array');",
+              "    rows.forEach(row => {",
+              "        pm.expect(row.status).to.eql('FAILED');",
+              "        pm.expect(Number(row.amount)).to.be.at.least(1);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Reject cross-user card lookup",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{payment_url}}/api/payments/cards/{{other_user_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Cross-user card access is forbidden', function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Export own transactions",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "url": "{{django_url}}/api/transactions/export/?status=ALL"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Transaction CSV export is available to its owner', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+              "    pm.expect(pm.response.text()).to.include('Transaction ID');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete own test card",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{django_url}}/api/cards/delete/{{card_id}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Owned test card can be deleted with password confirmation', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{access_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{django_url}}/api/auth/logout/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Logout blacklists the caller refresh token', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Administrator session (configure admin variables first)",
+      "item": [
+        {
+          "name": "Fetch admin login CSRF token",
+          "request": {
+            "method": "GET",
+            "url": "{{django_url}}/admin/login/?next=/admin/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin login page provides a CSRF token', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const match = pm.response.text().match(/name=\"csrfmiddlewaretoken\" value=\"([^\"]+)\"/);",
+                  "    pm.expect(match, 'CSRF token field').not.to.equal(null);",
+                  "    pm.collectionVariables.set('admin_csrf_token', match[1]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in as Administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Referer",
+                "value": "{{django_url}}/admin/login/"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "csrfmiddlewaretoken",
+                  "value": "{{admin_csrf_token}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{admin_username}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}"
+                },
+                {
+                  "key": "next",
+                  "value": "/admin/"
+                }
+              ]
+            },
+            "url": "{{django_url}}/admin/login/?next=/admin/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Administrator session is established', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.text()).to.include('Operations dashboard');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrator payment summary",
+          "request": {
+            "method": "GET",
+            "url": "{{django_url}}/admin/payment-summary/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Administrator can open payment summary', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrator transaction export",
+          "request": {
+            "method": "GET",
+            "url": "{{django_url}}/admin/transactions/export/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Administrator can export transactions', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,10 @@ class PaymentCreate(BaseModel):
     card_id: int = Field(..., gt=0)
     card_last_four: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
     amount: Decimal = Field(..., gt=0, decimal_places=2)
+    simulate_failure: bool = Field(
+        default=False,
+        description="For this local simulator only, return a declined payment outcome.",
+    )
 
     @field_validator("amount")
     @classmethod

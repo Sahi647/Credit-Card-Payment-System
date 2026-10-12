@@ -2,6 +2,7 @@ const accessTokenInput = document.getElementById("accessToken");
 const cardSelect = document.getElementById("cardId");
 const cardLastFourInput = document.getElementById("cardLastFour");
 const amountInput = document.getElementById("amount");
+const simulateFailureInput = document.getElementById("simulateFailure");
 const messageBox = document.getElementById("message");
 const payButton = document.getElementById("payButton");
 const resultPanel = document.getElementById("resultPanel");
@@ -123,7 +124,8 @@ async function makePayment() {
             body: JSON.stringify({
                 card_id: cardId,
                 card_last_four: cardLastFour,
-                amount
+                amount,
+                simulate_failure: simulateFailureInput.checked
             })
         });
         const payment = await readResponse(createResponse);
@@ -160,6 +162,7 @@ async function refreshPaymentStatus() {
 
 function resetPaymentForm() {
     currentPaymentId = undefined;
+    simulateFailureInput.checked = false;
     document.getElementById("refreshPaymentButton").hidden = true;
     document.getElementById("newPaymentButton").hidden = true;
     payButton.hidden = false;

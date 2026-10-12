@@ -85,6 +85,7 @@ def create_payment(
     card_id: int,
     card_last_four: str,
     amount: Decimal,
+    simulate_failure: bool = False,
 ):
     amount_valid, amount_message = validate_amount(amount)
     if not amount_valid:
@@ -106,9 +107,17 @@ def create_payment(
         card_id=card["id"],
         card_last_four=card["last_four"],
         amount=amount,
-        status="SUCCESS",
+        status="PENDING",
     )
     db.add(payment)
+    record_transaction(db, payment)
+    db.commit()
+    db.refresh(payment)
+    return finalize_payment(db, payment, simulate_failure)
+
+
+def finalize_payment(db: Session, payment: Payment, simulate_failure: bool = False):
+    payment.status = "FAILED" if simulate_failure else "SUCCESS"
     record_transaction(db, payment)
     db.commit()
     db.refresh(payment)

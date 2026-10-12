@@ -68,16 +68,22 @@ def make_payment(
             payment_data.card_id,
             payment_data.card_last_four,
             payment_data.amount,
+            payment_data.simulate_failure,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from None
+    message = (
+        "Simulation declined. No real money was charged."
+        if payment.status == "FAILED"
+        else "Simulation successful. No real money was charged."
+    )
     return {
         "payment_id": payment.payment_id,
         "status": payment.status,
         "card_id": payment.card_id,
         "card_last_four": payment.card_last_four,
         "amount": payment.amount,
-        "message": "Simulation successful. No real money was charged.",
+        "message": message,
     }
 
 

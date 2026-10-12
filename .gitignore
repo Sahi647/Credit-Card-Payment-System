@@ -1,5 +1,6 @@
 .env
 .coverage
+.coverage.*
 htmlcov/
 Venv/
 __pycache__/
